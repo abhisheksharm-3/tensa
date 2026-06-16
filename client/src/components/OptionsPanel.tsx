@@ -1,5 +1,6 @@
 "use client";
 
+import { Captions, Scissors } from "lucide-react";
 import type { FieldProps, OptionsPanelProps } from "@/components/types";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,6 +17,7 @@ import {
   VIDEO_FORMATS,
   WHISPER_MODELS,
 } from "@/constants/options";
+import { cn } from "@/lib/utils";
 import type {
   AudioBitrate,
   AudioFormat,
@@ -26,18 +28,68 @@ import type {
 
 function Field({ label, children }: FieldProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+    <div className="flex flex-col gap-1.5">
+      <Label className="px-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </Label>
       {children}
     </div>
   );
 }
 
+function Toggle({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ElementType;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+        active
+          ? "bg-primary/15 text-primary ring-1 ring-inset ring-primary/40"
+          : "text-muted-foreground ring-1 ring-inset ring-border hover:text-foreground",
+      )}
+    >
+      <Icon className="size-3.5" />
+      {label}
+    </button>
+  );
+}
+
 export function OptionsPanel({ mode, values, onChange }: OptionsPanelProps) {
-  if (mode === "download" || mode === "playlist") return null;
+  if (mode === "playlist") return null;
+
+  if (mode === "download") {
+    return (
+      <div className="flex flex-wrap gap-1.5 px-1">
+        <Toggle
+          active={values.embedSubs}
+          onClick={() => onChange({ embedSubs: !values.embedSubs })}
+          icon={Captions}
+          label="Subtitles"
+        />
+        <Toggle
+          active={values.sponsorblock}
+          onClick={() => onChange({ sponsorblock: !values.sponsorblock })}
+          icon={Scissors}
+          label="Skip sponsors"
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    <div className="flex flex-wrap items-end gap-3 px-1">
       {mode === "audio" && (
         <>
           <Field label="Format">

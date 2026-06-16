@@ -68,6 +68,10 @@ class JobRequest(BaseModel):
     trim_end: float | None = None
     scale_width: int | None = None
     input_path: str | None = None
+    # Additive: embed subtitles into video downloads, and remove sponsor segments
+    # via SponsorBlock. Both apply only to download / playlist_item jobs.
+    embed_subs: bool = False
+    sponsorblock: bool = False
 
 
 class JobResponse(BaseModel):
@@ -84,3 +88,6 @@ class JobStatus(BaseModel):
     message: str | None = None
     download_url: str | None = None
     file_size: int | None = None
+    # Additive fields — the four required keys above are unchanged.
+    error: str | None = None
+    type: str | None = None

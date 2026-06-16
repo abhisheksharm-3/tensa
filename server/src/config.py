@@ -6,12 +6,52 @@ from typing import Annotated
 
 class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
+    # Async SQLAlchemy DSN for the durable job store. Default is a local file-based
+    # SQLite database so the API/worker run without Postgres in development; set
+    # DATABASE_URL to a postgresql+asyncpg://... DSN in production.
+    database_url: str = "sqlite+aiosqlite:///./tensa.db"
     download_dir: Path = Path("./downloads")
     whisper_models_dir: Path = Path("./models")
     rate_limit_per_hour: int = 20
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     file_expiry_seconds: int = 300
     file_sweep_seconds: int = 1800
+
+    # Worker scaling — ARQ concurrency per worker process and per-job wall-clock
+    # ceiling. Run several worker containers with `docker compose up --scale
+    # worker=N`; each honours its own max_jobs.
+    worker_max_jobs: int = 4
+    worker_job_timeout: int = 600
+
+    # Disk safety: hard ceiling on a single yt-dlp download. A multi-GB "Best"
+    # pull once filled the disk and crashed Docker. Passed to yt-dlp as
+    # --max-filesize. Accepts yt-dlp size syntax (e.g. "4G", "500M").
+    max_download_filesize: str = "4G"
+
+    # Uploads
+    max_upload_size: int = 2 * 1024 * 1024 * 1024  # 2 GiB
+    upload_allowed_content_types: Annotated[list[str], NoDecode] = [
+        "video/mp4",
+        "video/quicktime",
+        "video/x-matroska",
+        "video/webm",
+        "video/x-msvideo",
+        "video/mpeg",
+        "audio/mpeg",
+        "audio/mp4",
+        "audio/x-m4a",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/flac",
+        "audio/ogg",
+        "audio/aac",
+        "application/octet-stream",
+    ]
+
+    # Observability
+    log_level: str = "INFO"
+    log_json: bool = True
+    metrics_enabled: bool = True
 
     # YouTube hardening (other platforms need none of this).
     # Path to a Netscape-format cookies.txt — authenticates, raises rate limits,
@@ -23,6 +63,10 @@ class Settings(BaseSettings):
     # Explicit PO token escape hatch ("<client>+<token>"). Usually unnecessary if
     # the bgutil PO-token provider plugin is installed (see server README).
     youtube_po_token: str | None = None
+    # Base URL of the bgutil PO-token provider HTTP server (the sidecar). When set,
+    # yt-dlp's bgutil plugin fetches PO tokens from it automatically, clearing
+    # YouTube's "confirm you're not a bot" wall without manual cookies/tokens.
+    youtube_pot_provider_url: str = ""
 
     @field_validator("download_dir", "whisper_models_dir", mode="before")
     @classmethod
@@ -31,11 +75,11 @@ class Settings(BaseSettings):
         p.mkdir(parents=True, exist_ok=True)
         return p
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "upload_allowed_content_types", mode="before")
     @classmethod
-    def split_cors_origins(cls, v: str | list[str]) -> list[str]:
+    def split_csv(cls, v: str | list[str]) -> list[str]:
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
+            return [item.strip() for item in v.split(",") if item.strip()]
         return v
 
     @field_validator("youtube_cookies_file", "youtube_po_token", mode="before")

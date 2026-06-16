@@ -46,4 +46,6 @@ export const DEFAULT_OPTIONS: OptionValues = {
   whisperModel: "base",
   transcriptFormat: "srt",
   language: "",
+  embedSubs: false,
+  sponsorblock: false,
 };

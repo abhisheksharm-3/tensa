@@ -32,36 +32,26 @@ export function formatDuration(seconds: number | null): string {
 }
 
 /**
- * Triggers a file download by fetching as blob and creating a temporary anchor
- * This bypasses cross-origin download restrictions
+ * Fetch the file as a blob and click a temporary anchor to save it. Going
+ * through a blob (rather than linking the URL directly) forces a download
+ * instead of a navigation and sidesteps cross-origin `download` restrictions.
  */
 export async function triggerDownload(
   url: string,
   filename: string,
 ): Promise<void> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.status}`);
-    }
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Download failed: ${response.status}`);
 
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
+  const blobUrl = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement("a");
+  anchor.href = blobUrl;
+  anchor.download = filename;
+  anchor.style.display = "none";
 
-    const anchor = document.createElement("a");
-    anchor.href = blobUrl;
-    anchor.download = filename;
-    anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
 
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-
-    setTimeout(() => {
-      URL.revokeObjectURL(blobUrl);
-    }, 100);
-  } catch (error) {
-    console.error("Download failed:", error);
-    throw error;
-  }
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
 }

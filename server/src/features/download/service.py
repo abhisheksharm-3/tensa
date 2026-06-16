@@ -20,4 +20,6 @@ async def produce_download(redis: Redis, job_id: str, params: dict, job_dir: Pat
         redis=redis,
         audio_only=quality == AUDIO_QUALITY,
         audio_format=params.get("audio_format", "mp3"),
+        embed_subs=params.get("embed_subs", False),
+        sponsorblock=params.get("sponsorblock", False),
     )

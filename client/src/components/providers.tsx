@@ -6,10 +6,27 @@ import { useState } from "react";
 import type { ProvidersProps } from "@/components/types";
 
 export function Providers({ children }: ProvidersProps) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: 1,
+            refetchOnWindowFocus: false,
+            staleTime: 30_000,
+          },
+          mutations: { retry: 0 },
+        },
+      }),
+  );
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        forcedTheme="dark"
+        enableSystem={false}
+      >
         {children}
       </ThemeProvider>
     </QueryClientProvider>

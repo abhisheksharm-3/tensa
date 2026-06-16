@@ -7,11 +7,13 @@ export function createPendingJob(
   jobId: string,
   type: string,
   title: string,
+  thumbnail: string | null = null,
 ): Job {
   return {
     id: jobId,
     type,
     title,
+    thumbnail,
     status: "pending",
     percent: 0,
     speed: "—",
@@ -20,6 +22,7 @@ export function createPendingJob(
     fileSize: null,
     error: null,
     addedAt: Date.now(),
+    completedAt: null,
   };
 }
 

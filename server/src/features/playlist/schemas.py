@@ -13,5 +13,6 @@ class PlaylistItem(BaseModel):
 
 
 class PlaylistInfoResponse(BaseModel):
+    title: str | None = None
     items: list[PlaylistItem]
     total: int

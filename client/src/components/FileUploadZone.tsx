@@ -22,20 +22,21 @@ export function FileUploadZone({ mode, file, onFile }: FileUploadZoneProps) {
 
   if (file) {
     return (
-      <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
+      <div className="mx-1 flex items-center gap-3 rounded-xl border border-border bg-background/40 p-3">
         {file.type.startsWith("audio") ? (
-          <FileAudio className="size-5 shrink-0 text-muted-foreground" />
+          <FileAudio className="size-5 shrink-0 text-primary" />
         ) : (
-          <FileVideo className="size-5 shrink-0 text-muted-foreground" />
+          <FileVideo className="size-5 shrink-0 text-primary" />
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm text-foreground">{file.name}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="font-mono text-xs text-muted-foreground">
             {formatBytes(file.size)}
           </p>
         </div>
         <button
           type="button"
+          aria-label="Remove file"
           onClick={() => onFile(null)}
           className="text-muted-foreground transition-colors hover:text-foreground"
         >
@@ -49,10 +50,10 @@ export function FileUploadZone({ mode, file, onFile }: FileUploadZoneProps) {
     <button
       type="button"
       className={cn(
-        "w-full rounded-lg border-2 border-dashed p-6 text-center transition-colors",
+        "mx-1 block w-[calc(100%-0.5rem)] rounded-xl border border-dashed p-6 text-center transition-colors",
         isDragging
-          ? "border-primary bg-primary/10"
-          : "border-border hover:border-muted-foreground hover:bg-muted/40",
+          ? "border-primary/60 bg-primary/5"
+          : "border-border hover:border-muted-foreground/60 hover:bg-background/40",
       )}
       onDragOver={(e) => {
         e.preventDefault();
@@ -62,12 +63,10 @@ export function FileUploadZone({ mode, file, onFile }: FileUploadZoneProps) {
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
     >
-      <Upload className="mx-auto mb-2 size-6 text-muted-foreground" />
-      <p className="text-sm text-muted-foreground">
-        Drop a file here, or click to browse
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground/70">
-        {mode === "convert" ? "Video files" : "Audio or video files"}
+      <Upload className="mx-auto mb-2 size-5 text-muted-foreground" />
+      <p className="text-sm text-foreground">Drop a file, or click to browse</p>
+      <p className="mt-0.5 font-mono text-xs text-muted-foreground/70">
+        {mode === "convert" ? "video files" : "audio or video"}
       </p>
       <input
         ref={inputRef}

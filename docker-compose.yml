@@ -9,6 +9,27 @@ services:
       timeout: 3s
       retries: 5
 
+  # bgutil PO-token provider — supplies YouTube PO tokens to the yt-dlp plugin
+  # baked into the server image, clearing YouTube's anti-bot ("confirm you're not
+  # a bot") wall automatically. The api/worker reach it at http://bgutil:4416.
+  bgutil:
+    image: brainicism/bgutil-ytdlp-pot-provider:1.3.1
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=tensa
+      - POSTGRES_PASSWORD=tensa
+      - POSTGRES_DB=tensa
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tensa -d tensa"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   api:
     build: ./server
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
@@ -16,13 +37,16 @@ services:
       - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql+asyncpg://tensa:tensa@postgres:5432/tensa
       - DOWNLOAD_DIR=/app/downloads
       - WHISPER_MODELS_DIR=/app/models
       - RATE_LIMIT_PER_HOUR=20
       - CORS_ORIGINS=http://localhost:3000
+      - MAX_DOWNLOAD_FILESIZE=${MAX_DOWNLOAD_FILESIZE:-4G}
       - YOUTUBE_COOKIES_FILE=${YOUTUBE_COOKIES_FILE:-}
       - YOUTUBE_PLAYER_CLIENTS=${YOUTUBE_PLAYER_CLIENTS:-}
       - YOUTUBE_PO_TOKEN=${YOUTUBE_PO_TOKEN:-}
+      - YOUTUBE_POT_PROVIDER_URL=${YOUTUBE_POT_PROVIDER_URL:-http://bgutil:4416}
     volumes:
       - ./server:/app
       - downloads:/app/downloads
@@ -30,23 +54,32 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   worker:
     build: ./server
     command: arq src.worker.WorkerSettings
     environment:
       - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql+asyncpg://tensa:tensa@postgres:5432/tensa
       - DOWNLOAD_DIR=/app/downloads
       - WHISPER_MODELS_DIR=/app/models
+      - WORKER_MAX_JOBS=${WORKER_MAX_JOBS:-4}
+      - WORKER_JOB_TIMEOUT=${WORKER_JOB_TIMEOUT:-600}
+      - MAX_DOWNLOAD_FILESIZE=${MAX_DOWNLOAD_FILESIZE:-4G}
       - YOUTUBE_COOKIES_FILE=${YOUTUBE_COOKIES_FILE:-}
       - YOUTUBE_PLAYER_CLIENTS=${YOUTUBE_PLAYER_CLIENTS:-}
       - YOUTUBE_PO_TOKEN=${YOUTUBE_PO_TOKEN:-}
+      - YOUTUBE_POT_PROVIDER_URL=${YOUTUBE_POT_PROVIDER_URL:-http://bgutil:4416}
     volumes:
       - ./server:/app
       - downloads:/app/downloads
       - models:/app/models
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
 
   frontend:
@@ -56,11 +89,15 @@ services:
     ports:
       - "3000:3000"
     environment:
+      # Browser-facing (SSE stream + file downloads go direct to the API).
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # Server-side: Server Actions reach the API over the private network.
+      - INTERNAL_API_URL=http://api:8000
     depends_on:
       - api
 
 volumes:
   redis_data:
+  postgres_data:
   downloads:
   models:

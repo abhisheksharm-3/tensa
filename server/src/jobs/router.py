@@ -1,19 +1,37 @@
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 
 from src.config import settings
-from src.core.files import resolve_job_file, save_upload
+from src.core.files import resolve_job_file, save_upload, validate_input_path
 from src.core.rate_limit import limiter
 from src.core.sse import sse_response
+from src.core.url_safety import UnsafeURLError, validate_public_url
 from src.jobs.schemas import JobRequest, JobResponse, JobStatus, UploadResponse
 from src.jobs.service import cancel_job, enqueue_job, fetch_job_status
 
 router = APIRouter(prefix="/api")
 
+# Job types whose input_path points at a server-side file we must constrain.
+_FILE_INPUT_TYPES = {"audio_extract", "convert", "transcribe"}
+
+
+async def _validate_job_request(body: JobRequest) -> None:
+    """Validate untrusted JobRequest fields: SSRF-guard the URL, constrain input_path."""
+    if body.url:
+        try:
+            await run_in_threadpool(validate_public_url, body.url)
+        except UnsafeURLError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+    if body.input_path and body.type in _FILE_INPUT_TYPES:
+        # Raises HTTPException on traversal / missing file; normalises the path.
+        body.input_path = str(validate_input_path(body.input_path))
+
 
 @router.post("/jobs", response_model=JobResponse)
 @limiter.limit(f"{settings.rate_limit_per_hour}/hour")
 async def create_job(request: Request, body: JobRequest) -> JobResponse:
+    await _validate_job_request(body)
     job_id = await enqueue_job(body)
     return JobResponse(job_id=job_id)
 
@@ -46,6 +64,7 @@ async def serve_file(job_id: str, filename: str) -> FileResponse:
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_file(file: UploadFile = File(...)) -> UploadResponse:
-    dest = save_upload(file)
+@limiter.limit(f"{settings.rate_limit_per_hour}/hour")
+async def upload_file(request: Request, file: UploadFile = File(...)) -> UploadResponse:
+    dest = await save_upload(file)
     return UploadResponse(upload_path=str(dest))

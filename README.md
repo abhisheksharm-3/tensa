@@ -82,9 +82,14 @@ GET    /api/jobs/{id}            status (SSE fallback / polling)
 DELETE /api/jobs/{id}            cancel
 GET    /api/files/{id}/{name}    download the output (path-traversal guarded)
 POST   /api/upload               store an uploaded file -> { upload_path }
-POST   /api/playlist/info        playlist metadata (no download)
+POST   /api/metadata             resolve any URL -> { title, thumbnail, duration, ... }
+POST   /api/playlist/info        playlist title + items (with thumbnails)
 GET    /api/health
+GET    /metrics                  Prometheus metrics
 ```
+
+Jobs are persisted in Postgres; Redis carries the ARQ queue and SSE progress.
+Scale workers with `docker compose up --scale worker=N`.
 
 ## YouTube reliability (other platforms need none of this)
 
@@ -97,10 +102,14 @@ opt-in levers (set in `.env`):
 | `YOUTUBE_COOKIES_FILE` | Netscape `cookies.txt` from a logged-in browser. Authenticates, lifts rate limits, unlocks age/region-locked videos. Most impactful. |
 | `YOUTUBE_PLAYER_CLIENTS` | Comma list, e.g. `tv,web_safari`. Empty = yt-dlp's current default. |
 | `YOUTUBE_PO_TOKEN` | Explicit `<client>+<token>` escape hatch. |
+| `YOUTUBE_POT_PROVIDER_URL` | bgutil PO-token provider URL. Defaults to the bundled `bgutil` sidecar (`http://bgutil:4416`). |
 
-For automatic PO tokens, install the **bgutil PO-token provider** plugin in the
-worker image. In Docker the `./server` dir is mounted at `/app`, so dropping
-`server/cookies.txt` and setting `YOUTUBE_COOKIES_FILE=/app/cookies.txt` is enough.
+**Automatic PO tokens are wired in.** A `bgutil` PO-token provider runs as a
+sidecar in `docker-compose.yml` and the matching yt-dlp plugin is baked into the
+server image, so most YouTube downloads clear the "confirm you're not a bot" wall
+with no manual setup. For the most reliable results (rate limits, age/region
+locks), also drop a `server/cookies.txt` and set
+`YOUTUBE_COOKIES_FILE=/app/cookies.txt` (the `./server` dir mounts at `/app`).
 
 > Services like vidssave look "effortless" only because they run server-side
 > extraction behind **rotating residential proxies + PO-token solvers** and proxy
@@ -110,7 +119,7 @@ worker image. In Docker the `./server` dir is mounted at `/app`, so dropping
 ## Tests
 
 ```bash
-cd server && poetry run pytest      # 20 passing
+cd server && poetry run pytest      # 54 passing
 cd client && bun run lint           # biome
 ```
 

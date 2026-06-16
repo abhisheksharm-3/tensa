@@ -31,7 +31,12 @@ async def run_whisper(
     proc = await asyncio.create_subprocess_exec(
         *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
     )
-    await proc.communicate()
+    try:
+        await proc.communicate()
+    finally:
+        if proc.returncode is None:
+            proc.kill()
+            await proc.wait()
     if proc.returncode != 0:
         raise RuntimeError(f"whisper exited with code {proc.returncode}")
 

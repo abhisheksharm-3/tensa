@@ -13,6 +13,7 @@ export type Job = {
   id: string;
   type: string;
   title: string;
+  thumbnail: string | null;
   status: JobStatus;
   percent: number;
   speed: string;
@@ -21,6 +22,17 @@ export type Job = {
   fileSize: number | null;
   error: string | null;
   addedAt: number;
+  completedAt: number | null;
+};
+
+/** Resolved metadata for any URL (single item or playlist). */
+export type Metadata = {
+  title: string;
+  thumbnail: string | null;
+  duration: number | null;
+  uploader: string | null;
+  is_playlist: boolean;
+  entry_count: number | null;
 };
 
 export type SSEProgressEvent = {
@@ -65,9 +77,21 @@ export type OptionValues = {
   whisperModel: WhisperModel;
   transcriptFormat: TranscriptFormat;
   language: string;
+  embedSubs: boolean;
+  sponsorblock: boolean;
+};
+
+/** Shape returned by GET /api/jobs/{id} (status reconciliation, SSE fallback). */
+export type JobStatusResponse = {
+  job_id: string;
+  status: string;
+  message: string | null;
+  download_url: string | null;
+  file_size: number | null;
 };
 
 export type JobAction =
+  | { type: "HYDRATE"; jobs: Job[] }
   | { type: "ADD"; job: Job }
   | { type: "PATCH"; id: string; patch: Partial<Job> }
   | { type: "REMOVE"; id: string };
@@ -85,4 +109,6 @@ export type JobSubmitPayload = {
   whisper_model?: WhisperModel;
   transcript_format?: TranscriptFormat;
   language?: string;
+  embed_subs?: boolean;
+  sponsorblock?: boolean;
 };
