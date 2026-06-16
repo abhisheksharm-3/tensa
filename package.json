@@ -1,0 +1,19 @@
+{
+    "name": "tensa",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Video Toolkit - Download, extract, transcribe, and convert videos",
+    "scripts": {
+        "dev": "concurrently --names \"server,client\" --prefix-colors \"yellow,cyan\" \"npm run dev:server\" \"npm run dev:client\"",
+        "dev:server": "cd server && poetry run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+        "dev:client": "cd client && bun run dev",
+        "build:client": "cd client && bun run build",
+        "install:all": "cd server && poetry install && cd ../client && bun install"
+    },
+    "devDependencies": {
+        "concurrently": "^9.2.1"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}
