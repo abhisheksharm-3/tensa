@@ -1,6 +1,7 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, NoDecode
 from pydantic import field_validator
 from pathlib import Path
+from typing import Annotated
 
 
 class Settings(BaseSettings):
@@ -8,7 +9,7 @@ class Settings(BaseSettings):
     download_dir: Path = Path("./downloads")
     whisper_models_dir: Path = Path("./models")
     rate_limit_per_hour: int = 20
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     file_expiry_seconds: int = 300
     file_sweep_seconds: int = 1800
 
@@ -35,6 +36,16 @@ class Settings(BaseSettings):
     def split_cors_origins(cls, v: str | list[str]) -> list[str]:
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
+    @field_validator("youtube_cookies_file", "youtube_po_token", mode="before")
+    @classmethod
+    def empty_str_to_none(cls, v: str | None) -> str | None:
+        # docker-compose passes these as empty strings when unset; an empty
+        # string for a Path field would resolve to Path("."), which yt-dlp then
+        # tries to read as a cookies file. Treat blank as truly unset.
+        if isinstance(v, str) and not v.strip():
+            return None
         return v
 
     model_config = {"env_file": ".env"}

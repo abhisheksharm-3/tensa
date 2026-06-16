@@ -4,7 +4,9 @@ from src.engines.ytdlp import build_yt_dlp_cmd, parse_progress_line
 
 
 def test_parse_progress_line_valid():
-    result = parse_progress_line("download: 67.2%|8.4MiB/s|00:00:12")
+    # yt-dlp emits the template with our sentinel, without a "download:" prefix
+    # (that prefix is consumed by yt-dlp as the progress-type selector).
+    result = parse_progress_line("TENSA_DL| 67.2%|8.4MiB/s|00:00:12")
     assert result is not None
     assert result["type"] == "progress"
     assert result["percent"] == pytest.approx(67.2)
@@ -15,7 +17,7 @@ def test_parse_progress_line_valid():
 def test_parse_progress_line_invalid():
     assert parse_progress_line("[download] Destination: video.mp4") is None
     assert parse_progress_line("") is None
-    assert parse_progress_line("download: NA%|Unknown|Unknown") is None
+    assert parse_progress_line("TENSA_DL| NA%|Unknown|Unknown") is None
 
 
 def test_build_cmd_injects_cookies_and_clients_for_youtube(monkeypatch, tmp_path):

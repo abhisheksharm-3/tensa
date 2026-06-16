@@ -9,11 +9,16 @@ from redis.asyncio import Redis
 
 from src.config import settings
 
-PROGRESS_RE = re.compile(r"download:\s*(\d+\.?\d*)%\|([^|]+)\|(\S+)")
+PROGRESS_RE = re.compile(r"TENSA_DL\|\s*(\d+\.?\d*)%\|([^|]+)\|(\S+)")
 
 YOUTUBE_DOMAINS = ("youtube.com", "youtu.be", "youtube-nocookie.com")
+# Per yt-dlp docs, --progress-template is "optionally prefixed with one of
+# 'download:' (default) ... 'postprocess:' ...". That prefix is a TYPE *selector*
+# consumed by yt-dlp, never printed. So a literal "download:" never appears in
+# output; we emit our own "TENSA_DL|" sentinel inside the template and key the
+# parser off it. https://github.com/yt-dlp/yt-dlp#:~:text=--progress-template
 PROGRESS_TEMPLATE = (
-    "download:%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s"
+    "download:TENSA_DL|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s"
 )
 UNKNOWN_VALUES = ("UNKNOWN", "N/A")
 
