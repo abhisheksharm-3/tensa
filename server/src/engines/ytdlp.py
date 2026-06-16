@@ -7,10 +7,11 @@ from pathlib import Path
 
 from redis.asyncio import Redis
 
+from src.config import settings
+
 PROGRESS_RE = re.compile(r"download:\s*(\d+\.?\d*)%\|([^|]+)\|(\S+)")
 
 YOUTUBE_DOMAINS = ("youtube.com", "youtu.be", "youtube-nocookie.com")
-ANDROID_CLIENT_ARGS = ("--extractor-args", "youtube:player_client=android")
 PROGRESS_TEMPLATE = (
     "download:%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s"
 )
@@ -36,6 +37,28 @@ def is_youtube(url: str) -> bool:
     return any(domain in url for domain in YOUTUBE_DOMAINS)
 
 
+def youtube_args() -> list[str]:
+    """yt-dlp args that harden YouTube extraction: cookies, player clients, PO token.
+
+    Cookies authenticate and lift rate limits; the player-client and PO-token
+    settings are the levers for YouTube's evolving anti-bot checks. All are
+    opt-in via settings — unset means yt-dlp's own current defaults apply.
+    """
+    args: list[str] = []
+    cookies = settings.youtube_cookies_file
+    if cookies and cookies.exists():
+        args += ["--cookies", str(cookies)]
+
+    extractor_parts: list[str] = []
+    if settings.youtube_player_clients:
+        extractor_parts.append(f"player_client={settings.youtube_player_clients}")
+    if settings.youtube_po_token:
+        extractor_parts.append(f"po_token={settings.youtube_po_token}")
+    if extractor_parts:
+        args += ["--extractor-args", f"youtube:{';'.join(extractor_parts)}"]
+    return args
+
+
 def build_yt_dlp_cmd(
     url: str,
     fmt: str,
@@ -44,10 +67,10 @@ def build_yt_dlp_cmd(
     audio_format: str = "mp3",
     extra_args: list[str] | None = None,
 ) -> list[str]:
-    """Build a yt-dlp argv list, applying the Android-client throttling bypass for YouTube."""
+    """Build a yt-dlp argv list, applying YouTube hardening (cookies/clients/PO token)."""
     cmd = ["yt-dlp", "--newline"]
     if is_youtube(url):
-        cmd += list(ANDROID_CLIENT_ARGS)
+        cmd += youtube_args()
     cmd += ["--progress-template", PROGRESS_TEMPLATE]
     if audio_only:
         cmd += ["-x", "--audio-format", audio_format, "-f", fmt]
@@ -100,7 +123,10 @@ async def run_ytdlp(
 
 async def dump_playlist_json(url: str) -> list[dict]:
     """Fetch flat playlist metadata as a list of raw yt-dlp JSON dicts (one per entry)."""
-    cmd = ["yt-dlp", "--flat-playlist", "--dump-json", "--no-warnings", url]
+    cmd = ["yt-dlp", "--flat-playlist", "--dump-json", "--no-warnings"]
+    if is_youtube(url):
+        cmd += youtube_args()
+    cmd.append(url)
     proc = await asyncio.create_subprocess_exec(
         *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )

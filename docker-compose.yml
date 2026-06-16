@@ -20,6 +20,9 @@ services:
       - WHISPER_MODELS_DIR=/app/models
       - RATE_LIMIT_PER_HOUR=20
       - CORS_ORIGINS=http://localhost:3000
+      - YOUTUBE_COOKIES_FILE=${YOUTUBE_COOKIES_FILE:-}
+      - YOUTUBE_PLAYER_CLIENTS=${YOUTUBE_PLAYER_CLIENTS:-}
+      - YOUTUBE_PO_TOKEN=${YOUTUBE_PO_TOKEN:-}
     volumes:
       - ./server:/app
       - downloads:/app/downloads
@@ -35,6 +38,9 @@ services:
       - REDIS_URL=redis://redis:6379
       - DOWNLOAD_DIR=/app/downloads
       - WHISPER_MODELS_DIR=/app/models
+      - YOUTUBE_COOKIES_FILE=${YOUTUBE_COOKIES_FILE:-}
+      - YOUTUBE_PLAYER_CLIENTS=${YOUTUBE_PLAYER_CLIENTS:-}
+      - YOUTUBE_PO_TOKEN=${YOUTUBE_PO_TOKEN:-}
     volumes:
       - ./server:/app
       - downloads:/app/downloads

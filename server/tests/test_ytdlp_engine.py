@@ -18,22 +18,42 @@ def test_parse_progress_line_invalid():
     assert parse_progress_line("download: NA%|Unknown|Unknown") is None
 
 
-def test_build_cmd_adds_android_flag_for_youtube():
+def test_build_cmd_injects_cookies_and_clients_for_youtube(monkeypatch, tmp_path):
+    cookies = tmp_path / "cookies.txt"
+    cookies.write_text("# netscape")
+    monkeypatch.setattr("src.engines.ytdlp.settings.youtube_cookies_file", cookies)
+    monkeypatch.setattr("src.engines.ytdlp.settings.youtube_player_clients", "tv,web_safari")
+
     cmd = build_yt_dlp_cmd(
         url="https://www.youtube.com/watch?v=abc",
         fmt="bestvideo+bestaudio/best",
         output_template="/tmp/%(title)s.%(ext)s",
     )
-    assert "--extractor-args" in cmd
-    assert "android" in cmd[cmd.index("--extractor-args") + 1]
+    assert cmd[cmd.index("--cookies") + 1] == str(cookies)
+    assert "youtube:player_client=tv,web_safari" in cmd[cmd.index("--extractor-args") + 1]
 
 
-def test_build_cmd_no_android_flag_for_instagram():
+def test_build_cmd_no_youtube_args_for_instagram(monkeypatch, tmp_path):
+    cookies = tmp_path / "cookies.txt"
+    cookies.write_text("# netscape")
+    monkeypatch.setattr("src.engines.ytdlp.settings.youtube_cookies_file", cookies)
+
     cmd = build_yt_dlp_cmd(
         url="https://www.instagram.com/reel/abc/",
         fmt="bestvideo+bestaudio/best",
         output_template="/tmp/%(title)s.%(ext)s",
     )
+    assert "--cookies" not in cmd
+    assert "--extractor-args" not in cmd
+
+
+def test_build_cmd_youtube_unconfigured_stays_default():
+    cmd = build_yt_dlp_cmd(
+        url="https://youtu.be/abc",
+        fmt="bestvideo+bestaudio/best",
+        output_template="/tmp/%(title)s.%(ext)s",
+    )
+    assert "--cookies" not in cmd
     assert "--extractor-args" not in cmd
 
 

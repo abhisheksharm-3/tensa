@@ -12,6 +12,17 @@ class Settings(BaseSettings):
     file_expiry_seconds: int = 300
     file_sweep_seconds: int = 1800
 
+    # YouTube hardening (other platforms need none of this).
+    # Path to a Netscape-format cookies.txt — authenticates, raises rate limits,
+    # unlocks age/region-locked videos.
+    youtube_cookies_file: Path | None = None
+    # Comma-separated yt-dlp player clients (e.g. "tv,web_safari"). Empty = let
+    # yt-dlp choose its current default, which tracks YouTube's changes.
+    youtube_player_clients: str = ""
+    # Explicit PO token escape hatch ("<client>+<token>"). Usually unnecessary if
+    # the bgutil PO-token provider plugin is installed (see server README).
+    youtube_po_token: str | None = None
+
     @field_validator("download_dir", "whisper_models_dir", mode="before")
     @classmethod
     def make_path(cls, v: str) -> Path:
