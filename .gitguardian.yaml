@@ -1,0 +1,8 @@
+version: 2
+
+secret:
+  # .env.example ships placeholder (non-secret) values by design — it's a
+  # template, not real credentials. Committed config carries no literal secrets
+  # (the Postgres password is required via .env at runtime, never hardcoded).
+  ignored-paths:
+    - ".env.example"

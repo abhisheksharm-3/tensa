@@ -20,7 +20,7 @@ services:
     image: postgres:18-alpine
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-tensa}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tensa}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}
       - POSTGRES_DB=${POSTGRES_DB:-tensa}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -43,7 +43,7 @@ services:
       start_period: 30s
     environment:
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tensa}:${POSTGRES_PASSWORD:-tensa}@postgres:5432/${POSTGRES_DB:-tensa}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tensa}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-tensa}
       - DOWNLOAD_DIR=/app/downloads
       - WHISPER_MODELS_DIR=/app/models
       - RATE_LIMIT_PER_HOUR=20
@@ -67,7 +67,7 @@ services:
     command: arq src.worker.WorkerSettings
     environment:
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tensa}:${POSTGRES_PASSWORD:-tensa}@postgres:5432/${POSTGRES_DB:-tensa}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tensa}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-tensa}
       - DOWNLOAD_DIR=/app/downloads
       - WHISPER_MODELS_DIR=/app/models
       - WORKER_MAX_JOBS=${WORKER_MAX_JOBS:-4}
