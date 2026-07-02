@@ -67,4 +67,6 @@ async def serve_file(job_id: str, filename: str) -> FileResponse:
 @limiter.limit(f"{settings.rate_limit_per_hour}/hour")
 async def upload_file(request: Request, file: UploadFile = File(...)) -> UploadResponse:
     dest = await save_upload(file)
-    return UploadResponse(upload_path=str(dest))
+    # Return a handle relative to download_dir, not the absolute container FS path.
+    # validate_input_path resolves it back under the root when reused as input_path.
+    return UploadResponse(upload_path=str(dest.relative_to(settings.download_dir)))

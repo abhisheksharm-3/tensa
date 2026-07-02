@@ -26,12 +26,15 @@ export function UrlPanel({ onJobAdded }: UrlPanelProps) {
                 type="url"
                 value={panel.url}
                 onChange={(e) => panel.setUrl(e.target.value)}
+                aria-label="Media URL"
+                aria-invalid={!!panel.error}
+                aria-describedby={panel.error ? "url-error" : undefined}
                 placeholder={
                   URL_MODES.has(panel.mode)
                     ? "https://…"
                     : "paste a URL, or upload below"
                 }
-                className="min-w-0 flex-1 bg-transparent font-mono text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+                className="min-w-0 flex-1 bg-transparent font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
               <button
                 type="submit"
@@ -73,7 +76,11 @@ export function UrlPanel({ onJobAdded }: UrlPanelProps) {
           />
 
           {panel.error && (
-            <p className="px-1 font-mono text-xs text-destructive">
+            <p
+              id="url-error"
+              role="alert"
+              className="px-1 font-mono text-xs text-destructive"
+            >
               {panel.error}
             </p>
           )}

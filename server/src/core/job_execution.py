@@ -15,6 +15,9 @@ logger = get_logger(__name__)
 
 ProduceOutput = Callable[[Path], Awaitable[Path]]
 
+# Hold strong refs so fire-and-forget cleanup tasks aren't garbage-collected mid-flight.
+_cleanup_tasks: set[asyncio.Task] = set()
+
 
 async def execute_job(job_id: str, produce_output: ProduceOutput, job_type: str = "unknown") -> None:
     """Run a feature's work inside the standard job lifecycle.
@@ -41,7 +44,9 @@ async def execute_job(job_id: str, produce_output: ProduceOutput, job_type: str 
         await publish_event(job_id, {"type": "done", "download_url": download_url, "size": file_size})
         record_job(job_type, "done")
         logger.info("job.done", file_size=file_size)
-        asyncio.create_task(schedule_deletion(job_dir, settings.file_expiry_seconds))
+        task = asyncio.create_task(schedule_deletion(job_dir, settings.file_expiry_seconds))
+        _cleanup_tasks.add(task)
+        task.add_done_callback(_cleanup_tasks.discard)
     except asyncio.CancelledError:
         await update_job_status(job_id, {"status": "cancelled", "message": "Job cancelled"})
         await publish_event(job_id, {"type": "cancelled"})

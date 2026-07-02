@@ -1,5 +1,8 @@
 export type Mode = "download" | "audio" | "playlist" | "convert" | "transcribe";
 
+/** A job's backend type: a submit mode, or an individual playlist entry. */
+export type JobType = Mode | "playlist_item";
+
 export type JobStatus = "pending" | "running" | "done" | "error" | "cancelled";
 
 export type DownloadQuality = "best" | "1080p" | "720p" | "audio";
@@ -11,7 +14,7 @@ export type TranscriptFormat = "txt" | "srt" | "vtt";
 
 export type Job = {
   id: string;
-  type: string;
+  type: JobType;
   title: string;
   thumbnail: string | null;
   status: JobStatus;
@@ -99,7 +102,7 @@ export type JobAction =
 export type SSEHandler = (event: SSEEvent) => void;
 
 export type JobSubmitPayload = {
-  type: string;
+  type: JobType;
   url?: string;
   input_path?: string;
   quality?: DownloadQuality;

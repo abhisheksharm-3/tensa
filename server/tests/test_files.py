@@ -1,20 +1,64 @@
 import os
 import uuid
 
+import pytest
+from fastapi import HTTPException
+
 from src.config import settings
 from src.core.files import (
     create_job_dir,
-    format_file_size,
     get_job_output_file,
     resolve_job_file,
+    save_upload,
+    sweep_old_downloads,
 )
 
 
-def test_format_file_size():
-    assert format_file_size(0) == "0 B"
-    assert format_file_size(1024) == "1.0 KB"
-    assert format_file_size(1_048_576) == "1.0 MB"
-    assert format_file_size(142_000_000) == "135.4 MB"
+class _StubUpload:
+    def __init__(self, content_type, filename="clip.mp4", data=b""):
+        self.content_type = content_type
+        self.filename = filename
+        self._data = data
+        self._done = False
+
+    async def read(self, size=-1):
+        if self._done:
+            return b""
+        self._done = True
+        return self._data
+
+
+@pytest.mark.anyio
+async def test_save_upload_rejects_missing_content_type(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "download_dir", tmp_path)
+    with pytest.raises(HTTPException) as exc:
+        await save_upload(_StubUpload(content_type=None))
+    assert exc.value.status_code == 415
+
+
+@pytest.mark.anyio
+async def test_save_upload_rejects_disallowed_content_type(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "download_dir", tmp_path)
+    with pytest.raises(HTTPException) as exc:
+        await save_upload(_StubUpload(content_type="application/octet-stream"))
+    assert exc.value.status_code == 415
+
+
+@pytest.mark.anyio
+async def test_sweep_ages_out_individual_uploads(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "download_dir", tmp_path)
+    uploads = tmp_path / "uploads"
+    old = uploads / "old"
+    fresh = uploads / "fresh"
+    old.mkdir(parents=True)
+    fresh.mkdir(parents=True)
+    (old / "a.mp4").write_bytes(b"x")
+    (fresh / "b.mp4").write_bytes(b"y")
+    os.utime(old, (1, 1))  # far in the past
+
+    await sweep_old_downloads(max_age=3600)
+    assert not old.exists()
+    assert fresh.exists()
 
 
 def test_create_job_dir(tmp_path):

@@ -240,7 +240,10 @@ export default function LineWaves({
       gl.canvas.addEventListener("mouseleave", handleMouseLeave);
     }
 
-    let animationFrameId: number;
+    let animationFrameId = 0;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
 
     function update(time: number) {
       animationFrameId = requestAnimationFrame(update);
@@ -258,7 +261,12 @@ export default function LineWaves({
 
       renderer.render({ scene: mesh });
     }
-    animationFrameId = requestAnimationFrame(update);
+
+    if (reduceMotion) {
+      renderer.render({ scene: mesh });
+    } else {
+      animationFrameId = requestAnimationFrame(update);
+    }
 
     return () => {
       cancelAnimationFrame(animationFrameId);

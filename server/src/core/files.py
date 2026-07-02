@@ -49,27 +49,17 @@ def get_job_output_file(job_dir: Path) -> Path | None:
     return max(candidates, key=lambda f: f.stat().st_mtime)
 
 
-def format_file_size(size_bytes: int) -> str:
-    if size_bytes == 0:
-        return "0 B"
-    units = ["B", "KB", "MB", "GB", "TB"]
-    value = float(size_bytes)
-    for unit in units[:-1]:
-        if value < 1024:
-            return f"{value:.1f} {unit}" if unit != "B" else "0 B"
-        value /= 1024
-    return f"{value:.1f} TB"
-
-
 async def save_upload(file: UploadFile) -> Path:
     """Stream an uploaded file to disk with aiofiles, enforcing size + content-type.
 
-    Content-type must be allow-listed; bytes are written in chunks and aborted
-    (with cleanup) once the configured ceiling is exceeded, so a huge upload can't
-    fill the disk before validation.
+    Content-type is required and must be allow-listed; bytes are written in chunks
+    and aborted (with cleanup) once the configured ceiling is exceeded, so a huge
+    upload can't fill the disk before validation.
     """
     content_type = (file.content_type or "").split(";")[0].strip().lower()
-    if content_type and content_type not in settings.upload_allowed_content_types:
+    if not content_type:
+        raise HTTPException(status_code=415, detail="Missing content type")
+    if content_type not in settings.upload_allowed_content_types:
         raise HTTPException(status_code=415, detail=f"Unsupported content type: {content_type}")
 
     upload_dir = settings.download_dir / "uploads" / str(uuid.uuid4())
@@ -127,13 +117,25 @@ async def schedule_deletion(job_dir: Path, delay: int) -> None:
         shutil.rmtree(job_dir, ignore_errors=True)
 
 
+def _sweep_entry(entry: Path, now: float, max_age: int) -> None:
+    if now - entry.stat().st_mtime <= max_age:
+        return
+    if entry.is_dir():
+        shutil.rmtree(entry, ignore_errors=True)
+    else:
+        entry.unlink(missing_ok=True)
+
+
 async def sweep_old_downloads(max_age: int) -> None:
     root = settings.download_dir
     if not root.exists():
         return
     now = time.time()
-    for job_dir in root.iterdir():
-        if job_dir.is_dir():
-            age = now - job_dir.stat().st_mtime
-            if age > max_age:
-                shutil.rmtree(job_dir, ignore_errors=True)
+    for entry in root.iterdir():
+        # uploads/ holds many independent uploads under one dir; age each out on
+        # its own mtime so stale uploads expire and an active one isn't wiped.
+        if entry.name == "uploads" and entry.is_dir():
+            for upload in entry.iterdir():
+                _sweep_entry(upload, now, max_age)
+        else:
+            _sweep_entry(entry, now, max_age)

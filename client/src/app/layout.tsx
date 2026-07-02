@@ -24,8 +24,18 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const apiBase = process.env.PUBLIC_API_URL ?? "http://localhost:8000";
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <script
+          // Runtime-injected browser API base (not build-time inlined), read by getApiBase().
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: our own env, JSON-stringified
+          dangerouslySetInnerHTML={{
+            __html: `window.__TENSA_API_BASE__=${JSON.stringify(apiBase)}`,
+          }}
+        />
+      </head>
       <body
         className={`${spaceGrotesk.variable} ${jetbrains.variable} font-sans antialiased min-h-[100dvh]`}
       >

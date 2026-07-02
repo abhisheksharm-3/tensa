@@ -65,6 +65,12 @@ const SplitText: React.FC<SplitTextProps> = ({
       if (!ref.current || !text || !fontsLoaded) return;
       // Prevent re-animation if already completed
       if (animationCompletedRef.current) return;
+      // Honor reduced motion: leave the text at its final visible state, no tween.
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        animationCompletedRef.current = true;
+        onCompleteRef.current?.();
+        return;
+      }
       const el = ref.current as HTMLElement & {
         _rbsplitInstance?: GSAPSplitText;
       };

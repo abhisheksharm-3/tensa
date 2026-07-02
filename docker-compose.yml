@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:8.6-alpine
+    image: redis:8-alpine
     volumes:
       - redis_data:/data
     healthcheck:
@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
       - POSTGRES_USER=tensa
       - POSTGRES_PASSWORD=tensa
@@ -35,6 +35,12 @@ services:
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     environment:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql+asyncpg://tensa:tensa@postgres:5432/tensa
@@ -89,12 +95,16 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Browser-facing (SSE stream + file downloads go direct to the API).
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # Browser-facing absolute API base (SSE stream + file downloads go direct
+      # to the API). Read at request time by app/layout.tsx and injected into the
+      # page, so it's configurable without rebuilding. Set this to the URL the
+      # *browser* can reach the API at (e.g. https://api.yourhost.tld in prod).
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:8000}
       # Server-side: Server Actions reach the API over the private network.
       - INTERNAL_API_URL=http://api:8000
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
 volumes:
   redis_data:

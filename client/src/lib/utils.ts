@@ -32,26 +32,17 @@ export function formatDuration(seconds: number | null): string {
 }
 
 /**
- * Fetch the file as a blob and click a temporary anchor to save it. Going
- * through a blob (rather than linking the URL directly) forces a download
- * instead of a navigation and sidesteps cross-origin `download` restrictions.
+ * Trigger a file download by linking directly to the URL and letting the
+ * browser stream it to disk. Avoids buffering multi-GB files in memory; relies
+ * on the API's Content-Disposition to name the file.
  */
-export async function triggerDownload(
-  url: string,
-  filename: string,
-): Promise<void> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Download failed: ${response.status}`);
-
-  const blobUrl = URL.createObjectURL(await response.blob());
+export function triggerDownload(url: string, filename: string): void {
   const anchor = document.createElement("a");
-  anchor.href = blobUrl;
+  anchor.href = url;
   anchor.download = filename;
   anchor.style.display = "none";
 
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
-
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
 }

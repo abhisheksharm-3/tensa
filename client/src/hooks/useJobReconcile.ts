@@ -39,14 +39,16 @@ export function useJobReconcile(
       const job = targets[index];
       if (!job || result.isPending || processed.current.has(job.id)) return;
 
-      processed.current.add(job.id);
       const status = result.data;
 
       if (status === null) {
+        processed.current.add(job.id);
         patchJob(job.id, { status: "error", error: "File expired" });
         return;
       }
-      if (!status) return; // query errored; leave the job for SSE to resolve
+      if (!status) return; // query errored; leave the job for SSE to resolve (not yet processed)
+
+      processed.current.add(job.id);
 
       if (status.status === "done") {
         patchJob(job.id, {
@@ -54,6 +56,7 @@ export function useJobReconcile(
           percent: 100,
           downloadUrl: status.download_url,
           fileSize: status.file_size,
+          completedAt: Date.now(),
         });
       } else if (status.status === "failed") {
         patchJob(job.id, {

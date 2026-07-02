@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     download_dir: Path = Path("./downloads")
     whisper_models_dir: Path = Path("./models")
     rate_limit_per_hour: int = 20
+    # Honour X-Forwarded-For for the rate-limit key. Enable only when the app sits
+    # behind a trusted proxy that sets a reliable XFF header, else clients could
+    # spoof it. Off by default (direct client IP).
+    trust_proxy_headers: bool = False
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     file_expiry_seconds: int = 300
     file_sweep_seconds: int = 1800
@@ -45,7 +49,6 @@ class Settings(BaseSettings):
         "audio/flac",
         "audio/ogg",
         "audio/aac",
-        "application/octet-stream",
     ]
 
     # Observability

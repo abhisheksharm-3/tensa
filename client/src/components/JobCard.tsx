@@ -14,7 +14,12 @@ function StatusDot({ status }: { status: JobStatus }) {
   switch (status) {
     case "pending":
       return (
-        <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+        // biome-ignore lint/a11y/useSemanticElements: status role on a decorative spinner icon
+        <Loader2
+          role="status"
+          aria-label="Pending"
+          className="size-4 shrink-0 animate-spin text-muted-foreground"
+        />
       );
     case "running":
       return (
@@ -31,7 +36,6 @@ function StatusDot({ status }: { status: JobStatus }) {
 
 export function JobCard({ job, onEvent, onRemove }: JobCardProps) {
   const [expiresIn, setExpiresIn] = useState<number | null>(null);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
   const isActive = job.status === "pending" || job.status === "running";
   const cancelJob = useCancelJob();
 
@@ -53,19 +57,14 @@ export function JobCard({ job, onEvent, onRemove }: JobCardProps) {
 
   const expired = job.status === "done" && expiresIn === 0;
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!job.downloadUrl) return;
-    setDownloadError(null);
     // Use the real output filename (with extension) from the URL, not the display
     // title — the metadata title has no extension and would save as a "Document".
     const filename = decodeURIComponent(
       job.downloadUrl.split("/").pop() ?? job.title,
     );
-    try {
-      await triggerDownload(fileDownloadUrl(job.downloadUrl), filename);
-    } catch {
-      setDownloadError("File expired — re-submit to download again.");
-    }
+    triggerDownload(fileDownloadUrl(job.downloadUrl), filename);
   };
 
   return (
@@ -115,13 +114,23 @@ export function JobCard({ job, onEvent, onRemove }: JobCardProps) {
 
       {job.status === "running" && (
         <div className="mt-3 space-y-1.5">
-          <div className="h-1 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-1 overflow-hidden rounded-full bg-muted"
+            role="progressbar"
+            aria-label="Download progress"
+            aria-valuenow={Math.round(job.percent)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
             <div
               className="h-full rounded-full bg-primary shadow-[0_0_8px_0] shadow-primary/60 transition-[width] duration-300 ease-out"
               style={{ width: `${job.percent}%` }}
             />
           </div>
-          <div className="flex justify-between font-mono text-[11px] text-muted-foreground">
+          <div
+            className="flex justify-between font-mono text-[11px] text-muted-foreground"
+            aria-live="polite"
+          >
             <span>
               {job.percent.toFixed(1)}% · {job.speed}
             </span>
@@ -156,11 +165,6 @@ export function JobCard({ job, onEvent, onRemove }: JobCardProps) {
                 </p>
               )}
             </>
-          )}
-          {downloadError && (
-            <p className="text-center font-mono text-[11px] text-destructive">
-              {downloadError}
-            </p>
           )}
         </div>
       )}

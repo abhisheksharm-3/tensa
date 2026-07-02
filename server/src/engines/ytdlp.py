@@ -25,6 +25,10 @@ PROGRESS_TEMPLATE = (
 )
 UNKNOWN_VALUES = ("UNKNOWN", "N/A")
 
+# API-process metadata probes must never hang a request handler indefinitely.
+_METADATA_TIMEOUT = 60  # seconds
+_MAX_PLAYLIST_ENTRIES = 1000
+
 # Production reliability knobs applied to every download.
 _RELIABILITY_ARGS = [
     "--retries", "10",
@@ -194,6 +198,18 @@ async def run_ytdlp(
     return output
 
 
+async def _communicate_with_timeout(
+    proc: asyncio.subprocess.Process, timeout: int = _METADATA_TIMEOUT
+) -> tuple[bytes, bytes]:
+    """communicate() with a hard timeout; kill the process and raise on expiry."""
+    try:
+        return await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        raise RuntimeError(f"yt-dlp timed out after {timeout}s") from None
+
+
 async def dump_playlist_json(url: str) -> list[dict]:
     """Fetch flat playlist metadata as a list of raw yt-dlp JSON dicts (one per entry)."""
     cmd = ["yt-dlp", "--flat-playlist", "--dump-json", "--no-warnings"]
@@ -203,7 +219,7 @@ async def dump_playlist_json(url: str) -> list[dict]:
     proc = await asyncio.create_subprocess_exec(
         *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
-    stdout, stderr = await proc.communicate()
+    stdout, stderr = await _communicate_with_timeout(proc)
     if proc.returncode != 0:
         raise RuntimeError(stderr.decode(errors="replace").strip() or "yt-dlp failed")
 
@@ -216,6 +232,8 @@ async def dump_playlist_json(url: str) -> list[dict]:
             entries.append(json.loads(line))
         except json.JSONDecodeError:
             continue
+        if len(entries) >= _MAX_PLAYLIST_ENTRIES:
+            break
     return entries
 
 
@@ -238,7 +256,7 @@ async def dump_video_metadata(url: str) -> dict:
     proc = await asyncio.create_subprocess_exec(
         *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
-    stdout, stderr = await proc.communicate()
+    stdout, stderr = await _communicate_with_timeout(proc)
     if proc.returncode != 0:
         raise RuntimeError(stderr.decode(errors="replace").strip() or "yt-dlp failed")
     try:

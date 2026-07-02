@@ -10,6 +10,8 @@ from src.jobs.store import create_job_record, get_job_record, update_job_status
 
 logger = get_logger(__name__)
 
+_TERMINAL_STATUSES = {"done", "failed", "cancelled"}
+
 
 async def enqueue_job(req: JobRequest) -> str:
     """Persist a pending job record and enqueue it on the shared ARQ pool."""
@@ -32,6 +34,9 @@ async def cancel_job(job_id: str) -> bool:
     status = await get_job_record(job_id)
     if status is None:
         return False
+    if status.status in _TERMINAL_STATUSES:
+        # Already finished; don't clobber the terminal state.
+        return True
 
     arq = await get_arq_pool()
     from arq.jobs import Job as ArqJob

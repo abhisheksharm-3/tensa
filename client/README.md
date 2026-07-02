@@ -1,6 +1,11 @@
 # Tensa Client
 
-Next.js 16 frontend with shadcn/ui.
+Frontend for Tensa, a self-hosted, ad-free media toolkit: paste a link (or upload a
+file) to download video, extract audio, convert, transcribe, or grab a playlist.
+
+Single-page app (Next.js 16 App Router) with an ember-tinted dark UI. All backend
+access flows through Server Actions → the FastAPI API; live download progress
+streams directly to the browser over SSE.
 
 ## Setup
 
@@ -8,53 +13,40 @@ Next.js 16 frontend with shadcn/ui.
 bun install
 ```
 
-## Run
+## Develop
 
 ```bash
-bun run dev
+bun run dev    # http://localhost:3000
+bun run lint   # Biome
 ```
 
-Client runs at http://localhost:3000
-
-## Pages
-
-| Route | Description |
-|-------|-------------|
-| `/` | Dashboard |
-| `/download` | Video download |
-| `/playlist` | Playlist download |
-| `/audio` | Audio extraction |
-| `/transcribe` | Speech-to-text |
-| `/convert` | Convert/trim/thumbnails |
-
-## Architecture
+## Layout
 
 ```
 src/
-├── app/              # Pages only
-├── features/         # Feature modules
-│   ├── download/
-│   │   ├── types.ts
-│   │   ├── actions.ts
-│   │   ├── hooks.ts
-│   │   └── components/
-│   └── ...
-└── components/
-    ├── shared/       # Shared components
-    └── ui/           # shadcn primitives
+├── app/          # layout.tsx + page.tsx (the single page) + globals.css
+├── components/   # UI components (flat) + ui/ shadcn/Radix primitives
+├── hooks/        # useJobManager, useSSE, useJobReconcile, useUrlPanel, …
+├── lib/          # actions/ (Server Actions), api-client, stream, utils
+├── constants/    # api, modes, sse, options
+└── types/        # shared types (job.ts)
 ```
 
-**Data Flow**: `actions.ts` → `hooks.ts` (React Query) → Components
+**Data flow**: component → hook (React Query) → Server Action (`lib/actions/*`) →
+`lib/api-client` → API. The SSE progress stream and file downloads are the
+sanctioned direct browser→API exceptions (see `lib/stream.ts`).
 
-## Design
+## Runtime config
 
-- **Theme**: Emerald green
-- **Corners**: None (0px radius)
-- **Style**: Minimal, no gradients
+The browser-facing API base is resolved at runtime, not baked into the build.
+`app/layout.tsx` reads `PUBLIC_API_URL` on the server and injects it as
+`window.__TENSA_API_BASE__`; `getApiBase()` (`constants/api.ts`) reads it in the
+browser. The Next server itself reaches the API via `INTERNAL_API_URL`.
 
 ## Tech
 
-- Next.js 16 (App Router)
-- React Query (@tanstack/react-query)
-- shadcn/ui + Tailwind CSS
-- next-themes (dark mode)
+- Next.js 16 (App Router) · React 19 + React Compiler
+- TanStack Query v5
+- Tailwind CSS v4 · shadcn/ui + Radix
+- GSAP + ogl (hero animation) · next-themes
+- Bun

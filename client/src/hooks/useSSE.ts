@@ -21,8 +21,12 @@ export function useSSE(jobId: string | null, onEvent: SSEHandler): void {
   const esRef = useRef<EventSource | null>(null);
   const retriesRef = useRef(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onEventRef = useRef(onEvent);
-  onEventRef.current = onEvent;
+
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  });
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -91,13 +95,18 @@ export function useSSE(jobId: string | null, onEvent: SSEHandler): void {
         if (retriesRef.current >= MAX_SSE_RETRIES) {
           startPolling(jobId);
         } else {
-          setTimeout(connect, 1000 * 2 ** retriesRef.current);
+          if (reconnectRef.current) clearTimeout(reconnectRef.current);
+          reconnectRef.current = setTimeout(
+            connect,
+            1000 * 2 ** retriesRef.current,
+          );
         }
       };
     };
 
     connect();
     return () => {
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
       esRef.current?.close();
       stopPolling();
     };

@@ -84,9 +84,12 @@ export function PlaylistModal({
 
           {!loading && !error && items.length > 0 && (
             <>
+              {/* biome-ignore lint/a11y/useSemanticElements: composite toggle row, not a native checkbox */}
               <button
                 type="button"
                 onClick={toggleAll}
+                role="checkbox"
+                aria-checked={allSelected}
                 className="flex shrink-0 items-center gap-3 border-b border-border/60 px-5 py-3 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 <CheckBox checked={allSelected} />
@@ -100,10 +103,13 @@ export function PlaylistModal({
                 {items.map((item, idx) => {
                   const isSel = selected.has(item.id);
                   return (
+                    // biome-ignore lint/a11y/useSemanticElements: composite media row, not a native checkbox
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => toggle(item.id)}
+                      role="checkbox"
+                      aria-checked={isSel}
                       className={cn(
                         "flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors",
                         isSel ? "bg-primary/5" : "hover:bg-muted/40",

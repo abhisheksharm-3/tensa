@@ -14,6 +14,7 @@ export function ModeSelector({ value, onChange }: ModeSelectorProps) {
             key={mode}
             type="button"
             onClick={() => onChange(mode)}
+            aria-label={label}
             aria-pressed={active}
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-colors",

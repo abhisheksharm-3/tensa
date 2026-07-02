@@ -1,0 +1,20 @@
+# Keep the build context lean and reproducible. Without this, `COPY . .` drags
+# the host virtualenv, caches, and secrets into the image.
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.git
+.gitignore
+*.md
+!README.md
+downloads
+models
+*.db
+*.sqlite3
+.env
+cookies.txt
+.DS_Store

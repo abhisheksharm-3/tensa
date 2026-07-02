@@ -1,11 +1,11 @@
-import type { Job } from "@/types/job";
+import type { Job, JobType } from "@/types/job";
 
 const MAX_TITLE_LENGTH = 60;
 
 /** Build a fresh pending Job for the live job list from a submitted source. */
 export function createPendingJob(
   jobId: string,
-  type: string,
+  type: JobType,
   title: string,
   thumbnail: string | null = null,
 ): Job {

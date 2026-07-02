@@ -1,4 +1,4 @@
-import { API_BASE } from "@/constants/api";
+import { getApiBase } from "@/constants/api";
 
 /**
  * Browser-side URLs that point straight at the FastAPI backend. These are the
@@ -14,9 +14,9 @@ import { API_BASE } from "@/constants/api";
  */
 
 export function jobStreamUrl(jobId: string): string {
-  return `${API_BASE}/api/jobs/${jobId}/stream`;
+  return `${getApiBase()}/api/jobs/${jobId}/stream`;
 }
 
 export function fileDownloadUrl(downloadPath: string): string {
-  return `${API_BASE}${downloadPath}`;
+  return `${getApiBase()}${downloadPath}`;
 }

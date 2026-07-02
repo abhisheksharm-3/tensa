@@ -65,7 +65,7 @@ export function FileUploadZone({ mode, file, onFile }: FileUploadZoneProps) {
     >
       <Upload className="mx-auto mb-2 size-5 text-muted-foreground" />
       <p className="text-sm text-foreground">Drop a file, or click to browse</p>
-      <p className="mt-0.5 font-mono text-xs text-muted-foreground/70">
+      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
         {mode === "convert" ? "video files" : "audio or video"}
       </p>
       <input
