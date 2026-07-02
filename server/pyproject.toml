@@ -30,7 +30,7 @@ priority = "explicit"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3"
-pytest-asyncio = "^0.24"
+pytest-asyncio = ">=0.24,<1.5"
 httpx = "^0.28"
 anyio = {extras = ["trio"], version = "^4.7"}
 
