@@ -1,7 +1,10 @@
-from pydantic_settings import BaseSettings, NoDecode
-from pydantic import field_validator
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Annotated
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, NoDecode
 
 
 class Settings(BaseSettings):
@@ -27,9 +30,8 @@ class Settings(BaseSettings):
     worker_max_jobs: int = 4
     worker_job_timeout: int = 600
 
-    # Disk safety: hard ceiling on a single yt-dlp download. A multi-GB "Best"
-    # pull once filled the disk and crashed Docker. Passed to yt-dlp as
-    # --max-filesize. Accepts yt-dlp size syntax (e.g. "4G", "500M").
+    # Hard per-download size ceiling, passed to yt-dlp as --max-filesize.
+    # Accepts yt-dlp size syntax (e.g. "4G", "500M").
     max_download_filesize: str = "4G"
 
     # Uploads

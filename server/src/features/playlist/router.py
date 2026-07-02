@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 
@@ -16,9 +18,9 @@ async def playlist_info(request: Request, body: PlaylistInfoRequest) -> Playlist
     try:
         await run_in_threadpool(validate_public_url, body.url)
     except UnsafeURLError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     try:
         title, items = await fetch_playlist_info(body.url)
     except RuntimeError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return PlaylistInfoResponse(title=title, items=items, total=len(items))

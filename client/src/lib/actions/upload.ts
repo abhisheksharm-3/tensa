@@ -1,6 +1,6 @@
 "use server";
 
-import { ApiRequestError, apiUpload } from "@/lib/api-client";
+import { apiUpload, rethrowApiError } from "@/lib/api-client";
 
 /**
  * Forward a file upload to the API. The browser sends FormData to this action;
@@ -19,7 +19,6 @@ export async function uploadFileAction(
     );
     return { uploadPath: upload_path };
   } catch (error) {
-    if (error instanceof ApiRequestError) throw new Error(error.detail);
-    throw error instanceof Error ? error : new Error("Upload failed");
+    rethrowApiError(error, "Upload failed");
   }
 }

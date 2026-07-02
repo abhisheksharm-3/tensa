@@ -4,8 +4,8 @@ from pathlib import Path
 
 from redis.asyncio import Redis
 
-from src.engines.ytdlp import best_thumbnail, dump_playlist_json, run_ytdlp
-from src.features.download.constants import AUDIO_QUALITY, DEFAULT_FORMAT, QUALITY_FORMAT_MAP
+from src.engines.ytdlp import best_thumbnail, dump_playlist_json
+from src.features.download.service import produce_download
 from src.features.playlist.schemas import PlaylistItem
 
 
@@ -33,17 +33,5 @@ async def fetch_playlist_info(url: str) -> tuple[str | None, list[PlaylistItem]]
 
 
 async def produce_playlist_item(redis: Redis, job_id: str, params: dict, job_dir: Path) -> Path:
-    """Download one playlist entry; identical mechanics to a single download."""
-    quality = params.get("quality", "best")
-    fmt = QUALITY_FORMAT_MAP.get(quality, DEFAULT_FORMAT)
-    return await run_ytdlp(
-        url=params["url"],
-        fmt=fmt,
-        output_dir=job_dir,
-        job_id=job_id,
-        redis=redis,
-        audio_only=quality == AUDIO_QUALITY,
-        audio_format=params.get("audio_format", "mp3"),
-        embed_subs=params.get("embed_subs", False),
-        sponsorblock=params.get("sponsorblock", False),
-    )
+    """Download one playlist entry; mechanically identical to a single download."""
+    return await produce_download(redis, job_id, params, job_dir)

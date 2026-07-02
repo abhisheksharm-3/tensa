@@ -1,6 +1,6 @@
 "use server";
 
-import { ApiRequestError, apiRequest } from "@/lib/api-client";
+import { ApiRequestError, apiRequest, rethrowApiError } from "@/lib/api-client";
 import type { JobStatusResponse, JobSubmitPayload } from "@/types/job";
 
 /**
@@ -10,12 +10,6 @@ import type { JobStatusResponse, JobSubmitPayload } from "@/types/job";
  * directly over SSE (see `hooks/useSSE.ts`), since a stream cannot be proxied
  * through a Server Action.
  */
-
-function rethrow(error: unknown): never {
-  // Surface a clean, serializable message across the RSC boundary.
-  if (error instanceof ApiRequestError) throw new Error(error.detail);
-  throw error instanceof Error ? error : new Error("Request failed");
-}
 
 export async function submitJobAction(
   payload: JobSubmitPayload,
@@ -27,7 +21,7 @@ export async function submitJobAction(
     });
     return { jobId: job_id };
   } catch (error) {
-    rethrow(error);
+    rethrowApiError(error);
   }
 }
 
@@ -35,7 +29,7 @@ export async function cancelJobAction(jobId: string): Promise<void> {
   try {
     await apiRequest<void>(`/api/jobs/${jobId}`, { method: "DELETE" });
   } catch (error) {
-    rethrow(error);
+    rethrowApiError(error);
   }
 }
 
@@ -48,6 +42,6 @@ export async function getJobStatusAction(
     // A 404 means the job/status has expired out of the store — treat as gone
     // rather than an error so stale persisted jobs reconcile cleanly.
     if (error instanceof ApiRequestError && error.status === 404) return null;
-    rethrow(error);
+    rethrowApiError(error);
   }
 }

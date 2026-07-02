@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from urllib.parse import parse_qs, urlsplit
 
-from src.engines.ytdlp import best_thumbnail, dump_video_metadata, is_youtube
+from src.engines.ytdlp import (
+    best_thumbnail,
+    dump_video_metadata,
+    is_youtube,
+    youtube_thumbnail_url,
+)
 from src.features.metadata.schemas import MetadataResponse
 
 
@@ -29,11 +34,11 @@ async def fetch_metadata(url: str) -> MetadataResponse:
     try:
         data = await dump_video_metadata(url)
     except RuntimeError:
-        vid = _youtube_id(url) if is_youtube(url) else None
-        if vid:
+        video_id = _youtube_id(url) if is_youtube(url) else None
+        if video_id:
             return MetadataResponse(
                 title="YouTube video",
-                thumbnail=f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
+                thumbnail=youtube_thumbnail_url(video_id, "hqdefault"),
                 is_playlist=False,
             )
         raise

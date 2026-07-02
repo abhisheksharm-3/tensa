@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 import json
 from collections.abc import AsyncGenerator
+
 from fastapi import Request
 from fastapi.responses import StreamingResponse
+
 from src.core.redis import get_redis
+from src.jobs.schemas import JobStatus
 from src.jobs.store import get_job_record
 
 _TERMINAL_STATUSES = ("done", "failed", "cancelled")
 _KEEPALIVE_INTERVAL = 15.0
 
 
-def _terminal_event(status) -> dict:
+def _terminal_event(status: JobStatus) -> dict:
     """Mirror the event shape execute_job publishes for each terminal state."""
     if status.status == "done":
         return {"type": "done", "download_url": status.download_url, "size": status.file_size}

@@ -34,6 +34,19 @@ export class ApiRequestError extends Error {
   }
 }
 
+/**
+ * Normalize a thrown error into a clean, serializable Error for the RSC boundary:
+ * an API error surfaces its detail; anything non-Error uses `fallback`. Server
+ * Actions wrap their calls in `try/catch` and delegate here.
+ */
+export function rethrowApiError(
+  error: unknown,
+  fallback = "Request failed",
+): never {
+  if (error instanceof ApiRequestError) throw new Error(error.detail);
+  throw error instanceof Error ? error : new Error(fallback);
+}
+
 async function toError(res: Response): Promise<ApiRequestError> {
   const fallback = res.statusText || "Request failed";
   const detail = await res

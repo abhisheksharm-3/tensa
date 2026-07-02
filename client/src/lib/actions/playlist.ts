@@ -1,6 +1,6 @@
 "use server";
 
-import { ApiRequestError, apiRequest } from "@/lib/api-client";
+import { apiRequest, rethrowApiError } from "@/lib/api-client";
 import type { PlaylistItem } from "@/types/job";
 
 export async function fetchPlaylistInfoAction(
@@ -13,7 +13,6 @@ export async function fetchPlaylistInfoAction(
       total: number;
     }>("/api/playlist/info", { method: "POST", body: { url } });
   } catch (error) {
-    if (error instanceof ApiRequestError) throw new Error(error.detail);
-    throw error instanceof Error ? error : new Error("Failed to load playlist");
+    rethrowApiError(error, "Failed to load playlist");
   }
 }

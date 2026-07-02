@@ -15,11 +15,8 @@ from src.core.files import get_job_output_file
 PROGRESS_RE = re.compile(r"TENSA_DL\|\s*(\d+\.?\d*)%\|([^|]+)\|(\S+)")
 
 YOUTUBE_DOMAINS = ("youtube.com", "youtu.be", "youtube-nocookie.com")
-# Per yt-dlp docs, --progress-template is "optionally prefixed with one of
-# 'download:' (default) ... 'postprocess:' ...". That prefix is a TYPE *selector*
-# consumed by yt-dlp, never printed. So a literal "download:" never appears in
-# output; we emit our own "TENSA_DL|" sentinel inside the template and key the
-# parser off it. https://github.com/yt-dlp/yt-dlp#:~:text=--progress-template
+# The "download:" prefix is a yt-dlp progress-type selector, consumed and never
+# printed — so we emit our own "TENSA_DL|" sentinel and key the parser off it.
 PROGRESS_TEMPLATE = (
     "download:TENSA_DL|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s"
 )
@@ -265,6 +262,11 @@ async def dump_video_metadata(url: str) -> dict:
         raise RuntimeError("could not parse media metadata") from exc
 
 
+def youtube_thumbnail_url(video_id: str, quality: str = "mqdefault") -> str:
+    """Synthesize a YouTube thumbnail URL from a video id."""
+    return f"https://i.ytimg.com/vi/{video_id}/{quality}.jpg"
+
+
 def best_thumbnail(entry: dict) -> str | None:
     """Pick a usable thumbnail URL from a yt-dlp entry.
 
@@ -280,8 +282,11 @@ def best_thumbnail(entry: dict) -> str | None:
         with_url = [t for t in thumbs if t.get("url")]
         if with_url:
             return with_url[-1]["url"]
-    vid = entry.get("id")
-    ie = (entry.get("ie_key") or entry.get("extractor") or "").lower()
-    if vid and ("youtube" in ie or entry.get("webpage_url_domain", "").endswith("youtube.com")):
-        return f"https://i.ytimg.com/vi/{vid}/mqdefault.jpg"
+    video_id = entry.get("id")
+    extractor_key = (entry.get("ie_key") or entry.get("extractor") or "").lower()
+    is_youtube_entry = "youtube" in extractor_key or entry.get("webpage_url_domain", "").endswith(
+        "youtube.com"
+    )
+    if video_id and is_youtube_entry:
+        return youtube_thumbnail_url(video_id)
     return None

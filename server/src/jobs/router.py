@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from src.config import settings
 from src.core.files import resolve_job_file, save_upload, validate_input_path
@@ -22,7 +24,7 @@ async def _validate_job_request(body: JobRequest) -> None:
         try:
             await run_in_threadpool(validate_public_url, body.url)
         except UnsafeURLError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if body.input_path and body.type in _FILE_INPUT_TYPES:
         # Raises HTTPException on traversal / missing file; normalises the path.
         body.input_path = str(validate_input_path(body.input_path))
@@ -37,7 +39,7 @@ async def create_job(request: Request, body: JobRequest) -> JobResponse:
 
 
 @router.get("/jobs/{job_id}/stream")
-async def stream_job(job_id: str, request: Request):
+async def stream_job(job_id: str, request: Request) -> StreamingResponse:
     return sse_response(job_id, request)
 
 
