@@ -77,6 +77,10 @@ source mount) and set a real `PUBLIC_API_URL` + Postgres password:
 docker compose -f docker-compose.yml up --build -d
 ```
 
+> If you previously ran the dev topology in this directory, recreate the data
+> volumes when switching to prod (`docker compose down -v`) — dev runs as root
+> and the prod container is non-root, so it can't write dev-created volumes.
+
 ## Local dev
 
 ```bash
