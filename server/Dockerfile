@@ -59,6 +59,13 @@ RUN [ -x /usr/local/bin/yt-dlp ] || (echo "yt-dlp missing" && exit 1)
 WORKDIR /app
 COPY . .
 
+# Non-root runtime. Pre-create + own the download/model mount points so fresh
+# named volumes inherit writable ownership for the unprivileged user.
+RUN useradd --create-home --uid 10001 app \
+    && mkdir -p /app/downloads /app/models \
+    && chown -R app:app /app
+USER app
+
 EXPOSE 8000
-# Dev compose overrides this (uvicorn --reload / arq worker). Sensible prod default:
+# Dev override supplies uvicorn --reload / the arq worker. Sensible prod default:
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

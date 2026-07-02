@@ -4,6 +4,12 @@ Self-hosted, ad-free media toolkit. Paste a URL from YouTube, Instagram, TikTok,
 Facebook, or X (or upload a file) and download it as video/audio, extract audio,
 convert formats, or transcribe it — with live progress and no ad-plagued sites.
 
+> [!WARNING]
+> Tensa has **no authentication** by design — it's built to run on your own
+> machine or private network. Do **not** expose it directly to the public
+> internet. If you need remote access, put it behind a reverse proxy that adds
+> authentication (and TLS), and keep the API/`/metrics` ports off the public net.
+
 ## Features
 
 - **Download** — video or audio, highest quality, from 1800+ sites via yt-dlp
@@ -61,6 +67,15 @@ docker compose up --build -d
 
 - Frontend: http://localhost:3000
 - API: http://localhost:8000  ·  health: `/api/health`
+
+`docker compose up` auto-merges `docker-compose.override.yml`, giving the **dev**
+topology: the API source is bind-mounted and runs with `--reload`. For a
+**production** deploy, run the hardened base file only (baked image, non-root, no
+source mount) and set a real `PUBLIC_API_URL` + Postgres password:
+
+```bash
+docker compose -f docker-compose.yml up --build -d
+```
 
 ## Local dev
 

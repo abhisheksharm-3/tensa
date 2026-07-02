@@ -1,0 +1,20 @@
+# Development overrides — auto-merged by `docker compose up`.
+#
+# Restores the live-reload dev loop: the API source is bind-mounted and uvicorn
+# runs with --reload; the worker source is mounted too. These services run as
+# root here because a source bind-mount over /app shadows the image's app-owned
+# dirs, leaving the named data volumes root-owned — fine for local dev.
+#
+# Production ignores this file: `docker compose -f docker-compose.yml up -d`
+# runs the hardened, non-root, no-source-mount base.
+services:
+  api:
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    user: root
+    volumes:
+      - ./server:/app
+
+  worker:
+    user: root
+    volumes:
+      - ./server:/app

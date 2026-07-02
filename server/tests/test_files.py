@@ -45,6 +45,18 @@ async def test_save_upload_rejects_disallowed_content_type(tmp_path, monkeypatch
 
 
 @pytest.mark.anyio
+async def test_save_upload_aborts_and_cleans_up_oversize(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "download_dir", tmp_path)
+    monkeypatch.setattr(settings, "max_upload_size", 10)
+    with pytest.raises(HTTPException) as exc:
+        await save_upload(_StubUpload(content_type="video/mp4", data=b"x" * 100))
+    assert exc.value.status_code == 413
+    # the per-upload dir must be removed so a rejected upload can't fill the disk
+    uploads = tmp_path / "uploads"
+    assert not uploads.exists() or list(uploads.iterdir()) == []
+
+
+@pytest.mark.anyio
 async def test_sweep_ages_out_individual_uploads(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "download_dir", tmp_path)
     uploads = tmp_path / "uploads"

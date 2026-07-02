@@ -19,20 +19,20 @@ services:
   postgres:
     image: postgres:18-alpine
     environment:
-      - POSTGRES_USER=tensa
-      - POSTGRES_PASSWORD=tensa
-      - POSTGRES_DB=tensa
+      - POSTGRES_USER=${POSTGRES_USER:-tensa}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tensa}
+      - POSTGRES_DB=${POSTGRES_DB:-tensa}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tensa -d tensa"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-tensa} -d $${POSTGRES_DB:-tensa}"]
       interval: 5s
       timeout: 3s
       retries: 5
 
   api:
     build: ./server
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     healthcheck:
@@ -43,7 +43,7 @@ services:
       start_period: 30s
     environment:
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql+asyncpg://tensa:tensa@postgres:5432/tensa
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tensa}:${POSTGRES_PASSWORD:-tensa}@postgres:5432/${POSTGRES_DB:-tensa}
       - DOWNLOAD_DIR=/app/downloads
       - WHISPER_MODELS_DIR=/app/models
       - RATE_LIMIT_PER_HOUR=20
@@ -54,7 +54,6 @@ services:
       - YOUTUBE_PO_TOKEN=${YOUTUBE_PO_TOKEN:-}
       - YOUTUBE_POT_PROVIDER_URL=${YOUTUBE_POT_PROVIDER_URL:-http://bgutil:4416}
     volumes:
-      - ./server:/app
       - downloads:/app/downloads
       - models:/app/models
     depends_on:
@@ -68,7 +67,7 @@ services:
     command: arq src.worker.WorkerSettings
     environment:
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql+asyncpg://tensa:tensa@postgres:5432/tensa
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tensa}:${POSTGRES_PASSWORD:-tensa}@postgres:5432/${POSTGRES_DB:-tensa}
       - DOWNLOAD_DIR=/app/downloads
       - WHISPER_MODELS_DIR=/app/models
       - WORKER_MAX_JOBS=${WORKER_MAX_JOBS:-4}
@@ -79,7 +78,6 @@ services:
       - YOUTUBE_PO_TOKEN=${YOUTUBE_PO_TOKEN:-}
       - YOUTUBE_POT_PROVIDER_URL=${YOUTUBE_POT_PROVIDER_URL:-http://bgutil:4416}
     volumes:
-      - ./server:/app
       - downloads:/app/downloads
       - models:/app/models
     depends_on:

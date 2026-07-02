@@ -10,12 +10,11 @@ import "server-only";
  * cannot proxy.
  *
  * `INTERNAL_API_URL` lets the Next server reach the API over the private Docker
- * network (e.g. http://api:8000) while the browser uses NEXT_PUBLIC_API_URL.
+ * network (e.g. http://api:8000). The browser uses `PUBLIC_API_URL` instead,
+ * injected at request time in `app/layout.tsx` and read via `getApiBase()`.
  */
 const INTERNAL_API_URL =
-  process.env.INTERNAL_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:8000";
+  process.env.INTERNAL_API_URL ?? "http://localhost:8000";
 
 export interface ApiError {
   status: number;
