@@ -77,14 +77,14 @@ trio = ["trio (>=0.32.0)"]
 
 [[package]]
 name = "arq"
-version = "0.26.3"
+version = "0.28.0"
 description = "Job queues in python with asyncio and redis"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "arq-0.26.3-py3-none-any.whl", hash = "sha256:9f4b78149a58c9dc4b88454861a254b7c4e7a159f2c973c89b548288b77e9005"},
-    {file = "arq-0.26.3.tar.gz", hash = "sha256:362063ea3c726562fb69c723d5b8ee80827fdefda782a8547da5be3d380ac4b1"},
+    {file = "arq-0.28.0-py3-none-any.whl", hash = "sha256:b1696bf5614d60f4172a2c0cbdc177e23ba03a5eb9acc29bd8181f4ea71fff94"},
+    {file = "arq-0.28.0.tar.gz", hash = "sha256:a458188aefc2d7ee17d136f80d8fa8df1d6eba4ceebdead87e9f172d027dc311"},
 ]
 
 [package.dependencies]
@@ -3356,4 +3356,4 @@ dev = ["pytest", "setuptools"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "5b2dc1be6295b6bb07398ab3fc930efb1fc5b21187251a2bad43f6555523b433"
+content-hash = "19bfd4d689f2f2d014035238b35e095b69cb82fd3ccd91371922135d167bc4e8"
